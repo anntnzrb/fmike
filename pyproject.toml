@@ -1,0 +1,57 @@
+[project]
+name = "fmike"
+version = "0.1.0"
+description = 'Windows tray toggle for a deliberately bad "funny mic" via Voicemeeter Banana, plus one-click speaker/headset switching.'
+requires-python = ">=3.15,<3.16"
+license = "AGPL-3.0-or-later"
+license-files = ["COPYING"]
+keywords = ["voicemeeter", "microphone", "windows", "tray", "discord", "audio"]
+classifiers = [
+    "Environment :: Win32 (MS Windows)",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Multimedia :: Sound/Audio",
+]
+dependencies = ["voicemeeter-api==2.7.2", "pycaw==20260927", "pystray==0.19.5", "pillow==13.0.0"]
+
+[project.urls]
+Repository = "https://github.com/anntnzrb/fmike"
+
+[project.scripts]
+fmike = "fmike.cli:main"
+[project.gui-scripts]
+fmike-tray = "fmike.tray:main"
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+[tool.uv]
+package = true
+[tool.ruff]
+target-version = "py315"
+line-length = 100
+[tool.ruff.lint]
+select = ["ALL"]
+# Exceptions carry contextual messages and fix text; eager type imports preserve runtime annotations.
+# License is declared centrally in COPYING, not repeated in source headers.
+ignore = ["D", "COM812", "TRY003", "EM101", "EM102", "TC001", "TC003", "CPY001"]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004", "INP001", "FBT001"] # pytest discovers leaf test files
+"src/fmike/cli.py" = ["T201"]
+"src/fmike/banana.py" = ["S603", "S607"] # fixed Windows program invocations
+"src/fmike/audio.py" = ["FBT003"] # COM signatures are positional
+"src/fmike/tray.py" = ["C901", "PLR0915", "FBT003", "TRY301"] # one GUI lifecycle owns callbacks
+"src/fmike/doctor.py" = ["C901"] # ten isolated diagnostic closures
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.15"
+include = ["src", "tests"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[dependency-groups]
+dev = [
+    "basedpyright==1.40.2",
+    "pytest==9.2.0",
+    "ruff==0.17.3",
+]

@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.basedpyright/
+build/
+dist/
+*.egg-info/
+*.log
+.firecrawl/
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

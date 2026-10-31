@@ -1,0 +1,25 @@
+# Edit device names here; find endpoint names in Windows Sound settings.
+# Apps should record from Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO).
+# Re-run `uv run fmike install` after moving this repository. Bootstrap: powershell -ExecutionPolicy Bypass -File install.ps1
+poll_seconds = 1.5
+banana_exe = 'C:\Program Files (x86)\VB\Voicemeeter\voicemeeterpro_x64.exe'
+
+[devices]
+mic = "Microphone (Razer USB Sound Card)"
+clock = "Speakers (Razer USB Sound Card)"
+solo = "VG245 ("
+party = "Speakers (Razer USB Sound Card)"
+b1 = "Voicemeeter Out B1 ("
+input = "Voicemeeter Input ("
+
+[presets.clean]
+gain = 0.0
+limit = 12
+compression = 0.0
+label = "mic"
+
+[presets.funny]
+gain = 12.0
+limit = 12
+compression = 10.0
+label = "mic FUNNY"
