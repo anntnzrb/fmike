@@ -7,6 +7,8 @@ from typing import cast
 
 from fmike.errors import ConfigError
 
+EQ_CELLS = 6
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Devices:
@@ -23,10 +25,19 @@ class Devices:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class EqBand:
+    freq: float
+    gain: float
+    q: float
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Preset:
     gain: float
     limit: int
     compression: float
+    color: tuple[float, float]
+    eq: tuple[EqBand, ...]
     label: str
 
 
@@ -72,16 +83,51 @@ def number(value: object, key: str) -> float:
     return float(value)
 
 
+def bounded(value: object, key: str, low: float, high: float) -> float:
+    result = number(value, key)
+    if not low <= result <= high:
+        raise invalid(key, f"must be between {low:g} and {high:g}")
+    return result
+
+
+def items(value: object, key: str, size: int | None = None) -> list[object]:
+    if not isinstance(value, list):
+        raise invalid(key, "expected an array")
+    values = cast("list[object]", value)
+    if size is not None and len(values) != size:
+        raise invalid(key, f"expected {size} numbers")
+    return values
+
+
+def eq_band(value: object, key: str) -> EqBand:
+    freq, gain, q = items(value, key, 3)
+    return EqBand(
+        freq=bounded(freq, key, 20.0, 20000.0),
+        gain=bounded(gain, key, -36.0, 18.0),
+        q=bounded(q, key, 0.3, 100.0),
+    )
+
+
 def preset(value: object, name: str) -> Preset:
-    data = table(value, {"gain", "limit", "compression", "label"}, f"presets.{name}.")
+    key = f"presets.{name}."
+    data = table(value, {"gain", "limit", "compression", "color", "eq", "label"}, key)
     limit = data["limit"]
     if isinstance(limit, bool) or not isinstance(limit, int):
-        raise invalid(f"presets.{name}.limit", "expected an integer")
+        raise invalid(f"{key}limit", "expected an integer")
+    color_x, color_y = items(data["color"], f"{key}color", 2)
+    bands = items(data["eq"], f"{key}eq")
+    if len(bands) > EQ_CELLS:
+        raise invalid(f"{key}eq", f"at most {EQ_CELLS} bands")
     return Preset(
-        gain=number(data["gain"], f"presets.{name}.gain"),
+        gain=bounded(data["gain"], f"{key}gain", -60.0, 12.0),
         limit=limit,
-        compression=number(data["compression"], f"presets.{name}.compression"),
-        label=text(data["label"], f"presets.{name}.label"),
+        compression=bounded(data["compression"], f"{key}compression", 0.0, 10.0),
+        color=(
+            bounded(color_x, f"{key}color", -0.5, 0.5),
+            bounded(color_y, f"{key}color", 0.0, 1.0),
+        ),
+        eq=tuple(eq_band(band, f"{key}eq") for band in bands),
+        label=text(data["label"], f"{key}label"),
     )
 
 

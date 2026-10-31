@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Overview
-`fmike` is a Windows-only tray app and CLI. It toggles a "funny mic" preset (heavy gain, compression and limiter) on a Voicemeeter Banana strip, with the mic routed to B1. It also switches the default Windows playback device between **solo** (monitor) and **party** (speakers). A global hotkey `CTRL+ALT+F` runs `fmike toggle`. License: AGPL-3.0-or-later (`COPYING`).
+`fmike` is a Windows-only tray app and CLI. It toggles a "funny mic" preset (gain, compression, limiter, Intellipan color, and a B1 bus EQ) on a Voicemeeter Banana strip, with the mic routed to B1. It also switches the default Windows playback device between **solo** (monitor) and **party** (speakers). A global hotkey `CTRL+ALT+F` runs `fmike toggle`. License: AGPL-3.0-or-later (`COPYING`).
 
 ## Architecture & Data Flow
 - **Inputs**: tray menu clicks, the `CTRL+ALT+F` Start Menu shortcut (`.venv/Scripts/pythonw.exe -m fmike toggle`), CLI subcommands, and a tray poll thread that runs every `poll_seconds`.
@@ -55,7 +55,7 @@ CI runs exactly: `uv sync --locked`, `ruff check`, `ruff format --check`, `based
 
 ## Important Files
 - `pyproject.toml`: deps (pinned `==`), scripts `fmike = fmike.cli:main` and `fmike-tray = fmike.tray:main`, plus ruff, basedpyright and pytest config.
-- `config.toml`: device names, the Banana exe path, and the `presets.clean`/`presets.funny` presets (`gain`, `limit`, `compression`, `label`). The tray detects funny mode from the label.
+- `config.toml`: device names, the Banana exe path, and the `presets.clean`/`presets.funny` presets (`gain`, `limit`, `compression`, `color = [x, y]`, `eq = [[freq, gain, q], ...]`, `label`). `banana.preset_script` turns a preset into one Voicemeeter `sendtext` script; EQ bands go on bus 3 (B1), and unused cells are switched off. The tray detects funny mode from the label.
 - `src/fmike/__main__.py`: `python -m fmike` entry point.
 - `install.ps1`: user-level bootstrap. It does not use `uv tool install`; the app runs from the repo's `.venv`.
 - `uv.lock`: committed. Use `--locked`.

@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from fmike.audio import Endpoint, PlaybackMode, resolve_playback
+from fmike.banana import preset_script
 from fmike.config import load_config
 from fmike.doctor import Check, evaluate, exit_code, render
 from fmike.errors import DeviceNotFoundError
@@ -56,6 +57,20 @@ def test_check_failure_does_not_skip_later_checks() -> None:
     assert not checks[0].ok
     assert "unavailable device" in checks[0].detail
     assert checks[1].ok
+
+
+def test_preset_script_drives_b1_eq_and_clears_unused_cells() -> None:
+    cfg = load_config(ROOT / "config.toml")
+    funny = dict(line.split("=", 1) for line in preset_script(cfg.funny).split(";"))
+    assert funny["Strip[0].Gain"] == "12"
+    assert funny["Strip[0].Color_y"] == "1"
+    assert funny["Strip[0].Label"] == '"mic FUNNY"'
+    assert funny["Bus[3].EQ.on"] == "1"
+    assert funny["Bus[3].EQ.channel[0].cell[3].gain"] == "18"
+    clean = dict(line.split("=", 1) for line in preset_script(cfg.clean).split(";"))
+    assert clean["Bus[3].EQ.on"] == "0"
+    assert all(clean[f"Bus[3].EQ.channel[0].cell[{i}].on"] == "0" for i in range(6))
+    assert clean["Strip[0].Color_x"] == "0"
 
 
 @pytest.mark.parametrize(

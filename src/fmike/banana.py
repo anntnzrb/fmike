@@ -7,12 +7,13 @@ from contextlib import contextmanager
 from typing import Protocol, Self, cast
 
 from fmike.audio import require_windows
-from fmike.config import Config, Preset
+from fmike.config import EQ_CELLS, Config, Preset
 from fmike.errors import BananaNotInstalledError, BananaUnavailableError
 
 log = logging.getLogger(__name__)
 INSTALL_FIX = "winget install -e --id VB-Audio.Voicemeeter.Banana; then reboot Windows."
 API_FIX = "Start Voicemeeter Banana; reboot Windows if Banana was just installed."
+B1_BUS = 3  # Banana buses: A1-A3 are 0-2, B1 is 3.
 
 
 class Device(Protocol):
@@ -39,6 +40,7 @@ class Remote(Protocol):
     bus: list[Bus]
 
     def apply(self, settings: Settings) -> None: ...
+    def sendtext(self, script: str) -> None: ...
     def __enter__(self) -> Self: ...
     def __exit__(self, *args: object) -> None: ...
 
@@ -104,17 +106,37 @@ def ensure_running(cfg: Config) -> None:
             time.sleep(1.0)
 
 
+def preset_script(preset: Preset) -> str:
+    """Voicemeeter script for strip 0 and its B1 bus EQ; unused EQ cells are switched off."""
+    color_x, color_y = preset.color
+    eq = f"Bus[{B1_BUS}].EQ"
+    lines = [
+        f"Strip[0].Gain={preset.gain:g}",
+        f"Strip[0].Limit={preset.limit}",
+        f"Strip[0].Comp={preset.compression:g}",
+        f"Strip[0].Color_x={color_x:g}",
+        f"Strip[0].Color_y={color_y:g}",
+        f'Strip[0].Label="{preset.label}"',
+        f"{eq}.on={int(bool(preset.eq))}",
+    ]
+    for index in range(EQ_CELLS):
+        cell = f"{eq}.channel[0].cell[{index}]"
+        if index < len(preset.eq):
+            band = preset.eq[index]
+            lines += [
+                f"{cell}.on=1",
+                f"{cell}.type=0",
+                f"{cell}.f={band.freq:g}",
+                f"{cell}.gain={band.gain:g}",
+                f"{cell}.q={band.q:g}",
+            ]
+        else:
+            lines += [f"{cell}.on=0", f"{cell}.gain=0"]
+    return ";".join(lines)
+
+
 def apply_preset(vm: Remote, preset: Preset) -> None:
-    vm.apply(
-        {
-            "strip-0": {
-                "gain": preset.gain,
-                "limit": preset.limit,
-                "comp": {"knob": preset.compression},
-                "label": preset.label,
-            }
-        }
-    )
+    vm.sendtext(preset_script(preset))
 
 
 def reconcile(cfg: Config) -> None:

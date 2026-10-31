@@ -12,6 +12,8 @@ def test_committed_config() -> None:
     cfg = load_config(ROOT / "config.toml")
     assert cfg.devices.mic == "Microphone (Razer USB Sound Card)"
     assert cfg.funny.gain == 12.0
+    assert cfg.funny.color == (0.5, 1.0)
+    assert cfg.clean.eq == ()
     assert cfg.poll_seconds == 1.5
 
 
@@ -21,6 +23,11 @@ def test_committed_config() -> None:
         ('mic = "Microphone (Razer USB Sound Card)"', "", "devices.mic"),
         ("poll_seconds = 1.5", 'poll_seconds = "fast"', "poll_seconds"),
         ("poll_seconds = 1.5", "poll_seconds = 1.5\nextra = 1", "extra"),
+        ("    [3150, 18, 2.0],", "    [3150, 19, 2.0],", "presets.funny.eq"),
+        ("    [3150, 18, 2.0],", "    [3150, 18],", "presets.funny.eq"),
+        ("color = [0.5, 1.0]", "color = [0.5, 2.0]", "presets.funny.color"),
+        ("gain = 12.0", "gain = 13.0", "presets.funny.gain"),
+        ("eq = []", "eq = [" + "[100, 0, 1], " * 7 + "]", "presets.clean.eq"),
     ],
 )
 def test_invalid_config(tmp_path: Path, old: str, new: str, key: str) -> None:
